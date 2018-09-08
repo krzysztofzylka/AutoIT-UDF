@@ -1,5 +1,9 @@
 #include <String.au3>
 
+#cs Function List
+	_NBP_Rates - Średni kurs walut wg. NBP
+#ce Function List
+
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _NBP_Rates
 ; Description ...: Średni kurs walut wg. NBP
