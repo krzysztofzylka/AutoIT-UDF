@@ -1,5 +1,6 @@
 #include-once
 #include "../IP.au3"
+#include "../_Time.au3"
 #include <String.au3>
 #include <Array.au3>
 
@@ -9,6 +10,8 @@ Global $_HTTP_IP, $_HTTP_Port
 Global $_HTTP_MaxClient = 150, $_HTTP_CountClient = 0
 Global $_HTTP_MaxLen = 65400
 Global $_HTTP_Client[$_HTTP_MaxClient][2]
+Global $_HTTP_ServerName = "AutoIT/HTTP/0.1Alpha"
+Global $_HTTP_Location = ""
 #EndRegion Global variable
 
 #cs Function List
@@ -148,6 +151,23 @@ Func __HTTP_SendDataMain($socket, $data)
 	Next
 	Local $method = _StringExplode($temp[0][1], " ")[0]
 	If $method <> "POST" Or $method <> "GET" Then Return
-	Local $link = _StringExplode($temp[0][1], " ")[1]
+	Local $file = _StringExplode($temp[0][1], " ")[1]
+	If $file = "/" Then $file = "index.html"
 	;Continue
+	_HTTP_SendData($socket, "Working!")
 EndFunc
+
+Func _HTTP_SendData($hSocket, $bData, $sMimeType = "text/html", $sReply = "200 OK", $connection = "close")
+	Local $sPacket = Binary("HTTP/1.1 " & $sReply & @CRLF & _
+			"Server: " & $_HTTP_ServerName & @CRLF & _
+			"Date: " & _Time_FullGTM() & @CRLF & _
+			"Allow: POST, GET" & @CRLF & _
+			"Connection: " & $connection & @CRLF & _
+			"Location: " & $_HTTP_Location & @CRLF & _
+			"Content-Lenght: " & StringLen($bData) & @CRLF & _
+			"Content-Type: " & $sMimeType & @CRLF & _
+			@CRLF)
+	TCPSend($hSocket, $sPacket)
+	TCPSend($hSocket, $bData)
+	If $connection == "close" Then TCPCloseSocket($hSocket)
+EndFunc   ;==>_HTTP_SendData
