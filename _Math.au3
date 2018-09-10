@@ -2,6 +2,7 @@
 	_Math_SquareField - pole kwadratu
 	_Math_GetPercent - procent jakiej jednej liczby jest druga
 	_Math_ByteTransform - Zamiana bitów na większe jednostki
+	_Math_AddPercent - Dodawanie procentu
 #ce Function List
 
 ; #INDEX# =======================================================================================================================
@@ -40,3 +41,12 @@ Func _Math_ByteTransform($bytes)
 	If $count < UBound($arr) Then $str = " " & $arr[$count]
 	Return $bytes & $str
 EndFunc   ;==>_Math_ByteTransform
+
+; #INDEX# =======================================================================================================================
+; Title .........: Dodawanie procentu
+; Description ...: Dodaje do liczby dany procent
+; Author(s) .....: Krzysztof Żyłka
+; ===============================================================================================================================
+Func _Math_AddPercent($int, $percent)
+	Return $int*(1+($percent/100))
+EndFunc   ;==>_Math_AddPercent
