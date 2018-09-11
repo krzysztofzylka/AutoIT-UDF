@@ -20,10 +20,13 @@ Global $_HTTP_ScriptDir = Null ;nazwa folderu z kodem do wysłania dla klienta
 	_HTTP_ServerStart - Uruchamianie serwera HTTP
 	_HTTP_SetConnection - Zmiana adresu IP oraz Portu dla serwera
 	_HTTP_MainLoop - Główna pętla wykonująca polecenia
+	_HTTP_MainUserLoop - Główna funkcja oczekująca na użytkowników
 
 	__HTTP_SendDataMain - Główna funkcja wysyłająca informacje do klienta
 	_HTTP_SendData - Główna funkcja wysyłająca dane do przeglądarki klienta
 	_HTTP_SendFile - Główna funkcja wysyłająca plik do przeglądarki klienta
+
+	_HTTP_CloseSerwer - Wyłączenie serwera
 #ce Function List
 
 ; #FUNCTION# ====================================================================================================================
@@ -79,6 +82,7 @@ EndFunc   ;==>_HTTP_ServerStart
 ; @error ........:
 ; ===============================================================================================================================
 Func _HTTP_MainLoop()
+	If $_HTTP_Socket == Null Then Return
 	For $x = 0 To $_HTTP_MaxClient - 1
 		If $_HTTP_Client[$x][0] == Null Then Return
 		If $_HTTP_Client[$x][0] < 0 Then Return
@@ -101,21 +105,21 @@ EndFunc   ;==>_HTTP_MainLoop
 ; @error ........:
 ; ===============================================================================================================================
 Func _HTTP_MainUserLoop()
+	If $_HTTP_Socket == Null Then Return
 	Local $Sock = TCPAccept($_HTTP_Socket)
-	If $Sock >= 0 Then
-		If $_HTTP_CountClient < $_HTTP_MaxClient Then
-			For $x = 0 To $_HTTP_MaxClient - 1 Step 1
-				If $_HTTP_Client[$x][0] = Null Then
-					$_HTTP_Client[$x][0] = $Sock
-					$_HTTP_CountClient += 1
-					Return True
-					ExitLoop
-				EndIf
-			Next
-		Else
-			;send error 503
-			Return 503
-		EndIf
+	If $Sock < 0 Then Return
+	If $_HTTP_CountClient < $_HTTP_MaxClient Then
+		For $x = 0 To $_HTTP_MaxClient - 1 Step 1
+			If $_HTTP_Client[$x][0] = Null Then
+				$_HTTP_Client[$x][0] = $Sock
+				$_HTTP_CountClient += 1
+				Return True
+				ExitLoop
+			EndIf
+		Next
+	Else
+		;send error 503
+		Return 503
 	EndIf
 EndFunc   ;==>_HTTP_MainUserLoop
 
@@ -198,3 +202,19 @@ Func _HTTP_SendFile($hSocket, $sFileLoc, $sMimeType = Default, $sReply = "200 OK
 	If $sMimeType == Default Then $sMimeType = _FileEx_GetMimeType($sFileLoc)
 	_HTTP_SendData($hSocket, $bFileData, $sMimeType, $sReply, $connection)
 EndFunc   ;==>_HTTP_SendFile
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _HTTP_CloseSerwer
+; Description ...: Wyłączenie serwera
+; Syntax ........: _HTTP_CloseSerwer()
+; Parameters ....:
+; Return values .:
+; @error ........:
+; ===============================================================================================================================
+Func _HTTP_CloseSerwer()
+	TCPShutdown()
+	$_HTTP_Socket = Null
+	For $x = 0 To $_HTTP_MaxClient - 1
+		$_HTTP_Client[$x][0] = Null
+	Next
+EndFunc
