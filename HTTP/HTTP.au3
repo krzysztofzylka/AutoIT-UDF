@@ -11,7 +11,7 @@ Global $_HTTP_MaxClient = 150, $_HTTP_CountClient = 0
 Global $_HTTP_MaxLen = 65400
 Global $_HTTP_Client[$_HTTP_MaxClient][2]
 Global $_HTTP_ServerName = "AutoIT/HTTP/0.1Alpha"
-Global $_HTTP_Location = ""
+Global $_HTTP_Location = "index.html"
 #EndRegion Global variable
 
 #cs Function List
@@ -20,6 +20,7 @@ Global $_HTTP_Location = ""
 	_HTTP_MainLoop - Główna pętla wykonująca polecenia
 
 	__HTTP_SendDataMain - Główna funkcja wysyłająca informacje do klienta
+	_HTTP_SendData - Główna funkcja wysyłająca dane do przeglądarki klienta
 #ce Function List
 
 ; #FUNCTION# ====================================================================================================================
@@ -149,14 +150,26 @@ Func __HTTP_SendDataMain($socket, $data)
 			$header[$add_id][1] = $exp[1]
 		EndIf
 	Next
-	Local $method = _StringExplode($temp[0][1], " ")[0]
-	If $method <> "POST" Or $method <> "GET" Then Return
-	Local $file = _StringExplode($temp[0][1], " ")[1]
+	Local $method = _StringExplode($temp[0], " ")[0]
+	If $method <> "POST" And $method <> "GET" Then Return
+	Local $file = _StringExplode($temp[0], " ")[1]
 	If $file = "/" Then $file = "index.html"
 	;Continue
 	_HTTP_SendData($socket, "Working!")
 EndFunc
 
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _HTTP_SendData
+; Description ...: Główna funkcja wysyłająca dane do przeglądarki klienta
+; Syntax ........: _HTTP_SendData($hSocket, $bData, $sMimeType, $sReply, $connection)
+; Parameters ....: $hSocket - socket TCP
+;				   $bData - dane HTTP
+;				   $sMimeType - typ mime danych (domyslnie "text/html")
+;				   $sReplay - status wysyłania (domyslnie "200 OK")
+;				   $connection - co ma sie stac z polaczeniem (domyslnie "close")
+; Return values .:
+; @error ........:
+; ===============================================================================================================================
 Func _HTTP_SendData($hSocket, $bData, $sMimeType = "text/html", $sReply = "200 OK", $connection = "close")
 	Local $sPacket = Binary("HTTP/1.1 " & $sReply & @CRLF & _
 			"Server: " & $_HTTP_ServerName & @CRLF & _
