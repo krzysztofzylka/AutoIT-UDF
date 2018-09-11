@@ -1,17 +1,19 @@
 #include-once
 #include "../IP.au3"
 #include "../_Time.au3"
+#include "../FileEx.au3"
 #include <String.au3>
 #include <Array.au3>
 
 #Region Global variable
-Global $_HTTP_Socket = Null
-Global $_HTTP_IP, $_HTTP_Port
-Global $_HTTP_MaxClient = 150, $_HTTP_CountClient = 0
-Global $_HTTP_MaxLen = 65400
-Global $_HTTP_Client[$_HTTP_MaxClient][2]
-Global $_HTTP_ServerName = "AutoIT/HTTP/0.1Alpha"
-Global $_HTTP_Location = "index.html"
+Global $_HTTP_Socket = Null ;Socket serwera
+Global $_HTTP_IP, $_HTTP_Port ;adres ip oraz port
+Global $_HTTP_MaxClient = 150, $_HTTP_CountClient = 0 ;maksymalna ilosc uzytkownikow i zliczanie podlaczonych
+Global $_HTTP_MaxLen = 1028 * 128 ;maksymalna ilosc odebranych danych w bitach (128kb)
+Global $_HTTP_Client[$_HTTP_MaxClient][2] ;tablica z uzytkownikami
+Global $_HTTP_ServerName = "AutoIT/HTTP/0.1Alpha" ;nazwa serwera
+Global $_HTTP_Location = ""
+Global $_HTTP_ScriptDir = Null ;nazwa folderu z kodem do wysłania dla klienta
 #EndRegion Global variable
 
 #cs Function List
@@ -21,6 +23,7 @@ Global $_HTTP_Location = "index.html"
 
 	__HTTP_SendDataMain - Główna funkcja wysyłająca informacje do klienta
 	_HTTP_SendData - Główna funkcja wysyłająca dane do przeglądarki klienta
+	_HTTP_SendFile - Główna funkcja wysyłająca plik do przeglądarki klienta
 #ce Function List
 
 ; #FUNCTION# ====================================================================================================================
@@ -87,7 +90,7 @@ Func _HTTP_MainLoop()
 			__HTTP_SendDataMain($_HTTP_Client[$x][0], $bufor)
 		EndIf
 	Next
-EndFunc
+EndFunc   ;==>_HTTP_MainLoop
 
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _HTTP_MainUserLoop
@@ -114,19 +117,7 @@ Func _HTTP_MainUserLoop()
 			Return 503
 		EndIf
 	EndIf
-EndFunc   ;==>_HTTP_NewUser
-
-#cs
-GET / HTTP/1.1
-Host: 127.0.0.1:8080
-Connection: keep-alive
-Cache-Control: max-age=0
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.183 Safari/537.36 Vivaldi/1.96.1147.55
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
-Accept-Encoding: gzip, deflate, br
-Accept-Language: pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7
-#ce
+EndFunc   ;==>_HTTP_MainUserLoop
 
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: __HTTP_SendDataMain
@@ -142,7 +133,7 @@ Func __HTTP_SendDataMain($socket, $data)
 	Local $temp = _StringExplode($data, @CRLF)
 	Local $header[1][2]
 	$header[0][1] = $temp[0]
-	For $x=0 To UBound($temp)-1
+	For $x = 0 To UBound($temp) - 1
 		$exp = _StringExplode($temp[$x], ": ", 2)
 		If UBound($exp) >= 2 Then
 			Local $add_id = _ArrayAdd($header, "")
@@ -154,9 +145,11 @@ Func __HTTP_SendDataMain($socket, $data)
 	If $method <> "POST" And $method <> "GET" Then Return
 	Local $file = _StringExplode($temp[0], " ")[1]
 	If $file = "/" Then $file = "index.html"
-	;Continue
-	_HTTP_SendData($socket, "Working!")
-EndFunc
+	$file = $_HTTP_ScriptDir & $file
+	If $_HTTP_ScriptDir == Null Then Return _HTTP_SendData($socket, "<b>Fatal error!</b><br />You must set dir ($_HTTP_ScriptDir)")
+	If Not FileExists($file) Then _HTTP_SendData($socket, "<b>Error 404</b><br />File not found", "text/html", "404 Not Found")
+	_HTTP_SendFile($socket, $file)
+EndFunc   ;==>__HTTP_SendDataMain
 
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _HTTP_SendData
@@ -184,3 +177,24 @@ Func _HTTP_SendData($hSocket, $bData, $sMimeType = "text/html", $sReply = "200 O
 	TCPSend($hSocket, $bData)
 	If $connection == "close" Then TCPCloseSocket($hSocket)
 EndFunc   ;==>_HTTP_SendData
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _HTTP_SendFile
+; Description ...: Główna funkcja wysyłająca plik do przeglądarki klienta
+; Syntax ........: _HTTP_SendFile($hSocket, $sFileLoc, $sMimeType, $sReply, $connection)
+; Parameters ....: $hSocket - socket TCP
+;				   $sFileLoc - nazwa pliku do pobrania dla klienta
+;				   $sMimeType - typ mime danych (domyslnie automatyczne dobranie typu Mime)
+;				   $sReplay - status wysyłania (domyslnie "200 OK")
+;				   $connection - co ma sie stac z polaczeniem (domyslnie "close")
+; Return values .:
+; @error ........:
+; ===============================================================================================================================
+Func _HTTP_SendFile($hSocket, $sFileLoc, $sMimeType = Default, $sReply = "200 OK", $connection = "close")
+	Local $hFile
+	$hFile = FileOpen($sFileLoc, 16)
+	$bFileData = FileRead($hFile)
+	FileClose($hFile)
+	If $sMimeType == Default Then $sMimeType = _FileEx_GetMimeType($sFileLoc)
+	_HTTP_SendData($hSocket, $bFileData, $sMimeType, $sReply, $connection)
+EndFunc   ;==>_HTTP_SendFile
