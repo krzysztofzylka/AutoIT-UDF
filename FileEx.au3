@@ -18,7 +18,8 @@ Func _FileEx_GetMimeType($file)
 	Local $extension = _FileEx_GetExtension($file)
 	Local $mime_list[][2] = [['txt', 'text/plain'], ['htm', 'text/html'], ['html', 'text/html'], ['js', 'application/javascript'], ['css', 'text/css'], ['png', 'image/png'], ['jpe', 'image/jpeg'], ['jpeg', 'image/jpeg'], ['jpg', 'image/jpeg']]
 	$search = _ArraySearch($mime_list, $extension)
-	Return $mime_list[$search][1]
+	If $search > -1 Then Return $mime_list[$search][1]
+	Return Null
 EndFunc
 
 ; #FUNCTION# ====================================================================================================================
