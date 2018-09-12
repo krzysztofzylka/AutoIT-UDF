@@ -20,7 +20,7 @@ Func _Time_FullGTM()
 	Local $data = _StringExplode(_Date_Time_SystemTimeToDateTimeStr($tSystem), " ")
 	Local $date = _StringExplode($data[0], "/")
 	Local $wday = _DateToDayOfWeek($date[2], $date[0], $date[1])
-	Return $day[Int($wday) - 1] & ", " & $date[0] & " " & $mon[Int($date[1])] & " " & $date[2] & " " & $data[1] & " GMT"
+	Return $day[Int($wday) - 1] & ", " & $date[1] & " " & $mon[Int($date[0])] & " " & $date[2] & " " & $data[1] & " GMT"
 EndFunc   ;==>_Time_FullGTM
 
 ; #INDEX# =======================================================================================================================
